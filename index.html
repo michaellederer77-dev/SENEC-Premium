@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ladeprotokoll</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ece5d8">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#ece5d8;
+    --panel:#ffffff;
+    --panel2:#f4efe4;
+    --line:#ddd4c2;
+    --text:#2b2a26;
+    --muted:#7a7568;
+    --amp:#3f6b3f;
+    --amp-dim:#345834;
+    --warn:#a85c2c;
+    --font-display:'Iosevka','Consolas',monospace;
+    --font-body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:linear-gradient(180deg, #f2ede1 0%, #faf8f2 45%, #ffffff 100%);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:var(--font-body);
+    padding:0;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px 80px;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header h1{
+    font-family:var(--font-body);
+    font-size:23px;
+    font-weight:700;
+    margin:0;
+    color:var(--text);
+  }
+  header .sub{
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  .note{
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.5;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 16px;
+    margin-bottom:20px;
+  }
+
+  .vehicles{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .vehicle{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:56px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    cursor:pointer;
+    background:var(--panel);
+    text-decoration:none;
+    color:var(--text);
+    transition:transform .15s, border-color .15s;
+  }
+  .vehicle:active{transform:scale(0.98);}
+  .vehicle:hover{border-color:var(--amp-dim);}
+  .vehicle .vname{
+    font-size:15px;
+    font-weight:700;
+  }
+
+  .ductoBtn{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    height:56px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    cursor:pointer;
+    color:var(--text);
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    transition:border-color .15s, transform .15s;
+  }
+  .ductoBtn:hover{border-color:var(--amp-dim);}
+  .ductoBtn:active{transform:scale(0.98);}
+  .ductoBtn svg{width:30px;height:30px;flex:none;color:var(--amp);}
+  .ductoBtn .ductoLabel{font-size:12.5px;font-weight:700;line-height:1.2;text-align:left;}
+  .ductoBtn .ductoSub{font-size:9.5px;color:var(--muted);font-weight:400;}
+
+  .drop{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    border:2px solid var(--line);
+    border-radius:18px;
+    padding:16px 18px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    background:var(--panel);
+    margin-bottom:20px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  }
+  .drop:hover, .drop.drag{
+    border-color:var(--amp-dim);
+    background:var(--panel2);
+  }
+  .drop .dropIcon{
+    width:40px;height:40px;
+    flex:none;
+    color:var(--amp);
+  }
+  .drop .dropText{text-align:left;}
+  .drop .big{
+    font-size:14px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .drop .small{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  input[type=file]{display:none;}
+
+  .divider{
+    border:none;
+    border-top:1px solid var(--line);
+    margin:24px 0;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+    margin-bottom:24px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 18px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card .kwh{
+    font-size:28px;
+    font-weight:700;
+    color:var(--amp);
+  }
+  .card .meta{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+  .card .nameInput{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:13px;
+    font-weight:600;
+    padding:4px 0;
+    margin-bottom:6px;
+    outline:none;
+  }
+  .card .nameInput:focus{border-bottom-color:var(--amp-dim);}
+  .card .tagId{
+    font-family:var(--font-display);
+    font-size:10px;
+    color:var(--muted);
+    letter-spacing:0.03em;
+    margin-bottom:8px;
+  }
+  .quickAssign{
+    display:flex;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .quickAssign button{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    padding:6px 8px;
+    font-size:10.5px;
+    border-radius:10px;
+  }
+  .quickAssign button.active{
+    background:var(--amp);
+    border-color:var(--amp);
+    color:#fff;
+  }
+  .bar-track{
+    height:4px;
+    background:var(--line);
+    border-radius:2px;
+    margin-top:10px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--amp);
+  }
+
+  h2{
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    margin:28px 0 12px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  th{
+    text-align:left;
+    font-weight:600;
+    color:var(--muted);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  td{
+    padding:9px 10px;
+    border-bottom:1px solid var(--line);
+    font-size:12.5px;
+  }
+  tr.hiddenRow td{opacity:0.4;}
+  tr:hover td{background:var(--panel2);}
+  .tag{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:20px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-size:11px;
+  }
+  .hideBtn{
+    padding:4px 9px;
+    font-size:10.5px;
+    border-radius:8px;
+  }
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    padding:40px 0;
+    font-size:13px;
+  }
+
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-top:28px;
+    flex-wrap:wrap;
+  }
+  .btnRow{display:flex;gap:8px;flex-wrap:wrap;}
+  button{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-family:var(--font-body);
+    font-size:12px;
+    padding:8px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:border-color .15s,color .15s,background .15s;
+  }
+  button:hover{border-color:var(--amp-dim);color:var(--amp);}
+  button.danger:hover{border-color:var(--warn);color:var(--warn);}
+
+  .status{
+    font-size:12px;
+    color:var(--amp-dim);
+    min-height:16px;
+    margin-bottom:10px;
+  }
+
+  select{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:10px;
+  }
+  input[type=file]#importInput{display:none;}
+</style>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(()=>{});});}</script>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Ladeprotokoll</h1>
+    <div class="sub" id="lastImport">— noch keine Daten geladen —</div>
+  </header>
+
+  <div class="note">
+    Eigenständige Version — läuft komplett lokal in diesem Browser, ohne Internet oder Claude. Daten bleiben auf diesem Gerät gespeichert. Für ein Backup oder den Umzug auf ein anderes Gerät nutze unten „Daten exportieren" / „Daten importieren".
+  </div>
+
+  <div class="vehicles">
+    <button class="ductoBtn" id="ductoBtn" type="button">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="4" width="22" height="34" rx="3" stroke="currentColor" stroke-width="2.2"/>
+        <rect x="14" y="9" width="14" height="9" rx="1.5" fill="currentColor" opacity="0.18"/>
+        <circle cx="16.5" cy="23" r="1.6" fill="currentColor"/>
+        <circle cx="21" cy="23" r="1.6" fill="currentColor"/>
+        <circle cx="25.5" cy="23" r="1.6" fill="currentColor"/>
+        <path d="M21 28h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M32 16c6 0 8 2 8 7v13c0 2.2-1.8 4-4 4h-1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+        <circle cx="35" cy="40" r="2" fill="currentColor" opacity="0.7"/>
+      </svg>
+      <span>
+        <div class="ductoLabel">DUCTO</div>
+        <div class="ductoSub">VPN öffnen</div>
+      </span>
+    </button>
+    <a class="vehicle" href="t03.html">
+      <span class="vname">Leapmotor T03</span>
+    </a>
+    <a class="vehicle" href="tayron.html">
+      <span class="vname">VW Tayron</span>
+    </a>
+  </div>
+
+  <label class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept=".csv" multiple>
+    <svg class="dropIcon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 6v22M24 6l-7 7M24 6l7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 30v6a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4v-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="dropText">
+      <div class="big">CSV aus DUCTO hier ablegen oder klicken</div>
+      <div class="small">Ladedaten → filtern → exportieren. Mehrfach-Import ist ok, Duplikate werden erkannt.</div>
+    </div>
+  </label>
+
+  <div class="status" id="status"></div>
+
+  <hr class="divider">
+
+  <div class="cards" id="cardSummary"></div>
+
+  <div class="toolbar">
+    <h2 style="margin:0;">Sitzungen</h2>
+    <div class="btnRow">
+      <select id="cardFilter"><option value="">Alle Karten</option></select>
+      <button id="toggleHiddenBtn">Ausgeblendete anzeigen</button>
+    </div>
+  </div>
+
+  <div id="tableWrap"></div>
+
+  <div class="toolbar">
+    <span style="font-size:11px;color:var(--muted);">Daten liegen lokal in diesem Browser (localStorage).</span>
+    <div class="btnRow">
+      <button id="exportBtn">Daten exportieren</button>
+      <button id="importBtn">Daten importieren</button>
+      <input type="file" id="importInput" accept=".json">
+      <button id="clearBtn" class="danger">Alle Daten löschen</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'wallbox-sessions';
+const NAMES_KEY = 'wallbox-card-names';
+const HIDDEN_KEY = 'wallbox-hidden-sessions';
+const DUCTO_URL_KEY = 'wallbox-ducto-url';
+const VEHICLES = ['Leapmotor T03', 'VW Tayron'];
+let sessions = [];
+let cardNames = {};
+let hiddenIds = [];
+let showHidden = false;
+
+function loadNames(){
+  try{
+    const raw = localStorage.getItem(NAMES_KEY);
+    cardNames = raw ? JSON.parse(raw) : {};
+  }catch(e){
+    cardNames = {};
+  }
+}
+function saveNames(){
+  try{ localStorage.setItem(NAMES_KEY, JSON.stringify(cardNames)); }
+  catch(e){ setStatus('Kartennamen konnten nicht gespeichert werden.', true); }
+}
+
+function loadHidden(){
+  try{
+    const raw = localStorage.getItem(HIDDEN_KEY);
+    hiddenIds = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    hiddenIds = [];
+  }
+}
+function saveHidden(){
+  try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(hiddenIds)); }
+  catch(e){ setStatus('Konnte Ausblenden-Status nicht speichern.', true); }
+}
+
+function displayName(tag){
+  return cardNames[tag] ? cardNames[tag] : tag;
+}
+
+// Normalize idTag so the same physical card doesn't create duplicate cards
+// across exports due to whitespace/case differences.
+function normalizeTag(raw){
+  return (raw || 'unbekannt').toString().trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function uid(row){
+  return [row.idTag, row.start, row.energy].join('|');
+}
+
+function parseNumber(str){
+  if(str === undefined || str === null) return NaN;
+  return parseFloat(String(str).trim().replace(/"/g,'').replace(',', '.'));
+}
+
+function parseCSV(text){
+  const delim = (text.split('\n')[0].split(';').length > text.split('\n')[0].split(',').length) ? ';' : ',';
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if(lines.length < 2) return [];
+  const headers = lines[0].split(delim).map(h => h.trim().toLowerCase().replace(/"/g,''));
+
+  const findCol = (candidates) => headers.findIndex(h => candidates.some(c => h.includes(c)));
+  const idxStart = findCol(['start','begin','von']);
+  const idxEnd = findCol(['end','ende','bis','stop']);
+  const idxTag = findCol(['idtag','id_tag','rfid','card','karte']);
+  const idxEnergyHeuristic = findCol(['energy','energie','kwh','meterstop','wh']);
+  const COL_K = 10; // Spalte K (0-indexiert): tatsächlicher Zählerstand, immer /1000 für kWh
+
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cells = lines[i].split(delim).map(c => c.trim().replace(/^"|"$/g,''));
+    if(cells.length < 2) continue;
+
+    // Primär: Spalte K als Zählerstand, geteilt durch 1000
+    let energy = NaN;
+    if(cells.length > COL_K){
+      const kVal = parseNumber(cells[COL_K]);
+      if(!isNaN(kVal)) energy = kVal / 1000;
+    }
+    // Fallback: heuristische Spaltenerkennung, falls Spalte K fehlt/leer ist
+    if(isNaN(energy)){
+      let energyRaw = idxEnergyHeuristic >= 0 ? cells[idxEnergyHeuristic] : '';
+      let val = parseNumber(energyRaw) || 0;
+      if(headers[idxEnergyHeuristic] && headers[idxEnergyHeuristic].includes('wh') && !headers[idxEnergyHeuristic].includes('kwh') && val > 200){
+        val = val / 1000;
+      }
+      energy = val;
+    }
+    if(isNaN(energy)) energy = 0;
+
+    rows.push({
+      start: idxStart >= 0 ? cells[idxStart] : cells[0],
+      end: idxEnd >= 0 ? cells[idxEnd] : '',
+      idTag: normalizeTag(idxTag >= 0 ? cells[idxTag] : 'unbekannt'),
+      energy: energy
+    });
+  }
+  return rows;
+}
+
+function loadStored(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    sessions = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    sessions = [];
+  }
+  loadNames();
+  loadHidden();
+  render();
+}
+
+function saveStored(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions)); }
+  catch(e){ setStatus('Speichern fehlgeschlagen — evtl. Speicher voll oder Browser blockiert localStorage.', true); }
+}
+
+function setStatus(msg, isWarn){
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = isWarn ? 'var(--warn)' : 'var(--amp-dim)';
+}
+
+async function handleFiles(files){
+  let added = 0, dup = 0;
+  for(const file of files){
+    const text = await file.text();
+    const rows = parseCSV(text);
+    const known = new Set(sessions.map(uid));
+    for(const r of rows){
+      const key = uid(r);
+      if(known.has(key)){ dup++; continue; }
+      sessions.push(r);
+      known.add(key);
+      added++;
+    }
+  }
+  sessions.sort((a,b) => (b.start || '').localeCompare(a.start || ''));
+  saveStored();
+  document.getElementById('lastImport').textContent = 'zuletzt importiert: ' + new Date().toLocaleString('de-DE');
+  setStatus(`${added} neue Sitzung(en) importiert, ${dup} Duplikat(e) übersprungen.`, false);
+  render();
+}
+
+function assignVehicle(tag, vehicleName){
+  const current = cardNames[tag] || '';
+  if(current === vehicleName){
+    delete cardNames[tag];
+  } else {
+    cardNames[tag] = vehicleName;
+  }
+  saveNames();
+  render();
+}
+
+function toggleHideSession(key){
+  if(hiddenIds.includes(key)){
+    hiddenIds = hiddenIds.filter(k => k !== key);
+  } else {
+    hiddenIds.push(key);
+  }
+  saveHidden();
+  render();
+}
+
+function render(){
+  const cardFilterEl = document.getElementById('cardFilter');
+  const cards = [...new Set(sessions.map(s => s.idTag))];
+  const currentFilter = cardFilterEl.value;
+  cardFilterEl.innerHTML = '<option value="">Alle Karten</option>' +
+    cards.map(c => `<option value="${c}">${displayName(c)}</option>`).join('');
+  cardFilterEl.value = cards.includes(currentFilter) ? currentFilter : '';
+
+  const visibleSessions = sessions.filter(s => showHidden || !hiddenIds.includes(uid(s)));
+
+  const totals = {};
+  visibleSessions.forEach(s => { totals[s.idTag] = (totals[s.idTag]||0) + s.energy; });
+  const maxTotal = Math.max(1, ...Object.values(totals));
+  const summaryEl = document.getElementById('cardSummary');
+  if(Object.keys(totals).length === 0){
+    summaryEl.innerHTML = '';
+  } else {
+    summaryEl.innerHTML = Object.entries(totals).map(([tag,kwh]) => `
+      <div class="card">
+        <input class="nameInput" data-tag="${tag}" placeholder="Karte benennen…" value="${cardNames[tag] || ''}">
+        <div class="tagId">${tag}</div>
+        <div class="quickAssign" data-tag="${tag}">
+          ${VEHICLES.map(v => `
+            <button type="button" data-vehicle="${v}" class="${cardNames[tag] === v ? 'active' : ''}">${v}</button>
+          `).join('')}
+        </div>
+        <div class="kwh">${kwh.toFixed(1)} kWh</div>
+        <div class="meta">${visibleSessions.filter(s=>s.idTag===tag).length} Ladevorgänge</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(kwh/maxTotal*100).toFixed(0)}%"></div></div>
+      </div>
+    `).join('');
+    summaryEl.querySelectorAll('.nameInput').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const tag = e.target.dataset.tag;
+        const val = e.target.value.trim();
+        if(val) cardNames[tag] = val; else delete cardNames[tag];
+        saveNames();
+        render();
+      });
+    });
+    summaryEl.querySelectorAll('.quickAssign button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tag = e.target.closest('.quickAssign').dataset.tag;
+        assignVehicle(tag, e.target.dataset.vehicle);
+      });
+    });
+  }
+
+  const filtered = cardFilterEl.value ? visibleSessions.filter(s => s.idTag === cardFilterEl.value) : visibleSessions;
+  const tableWrap = document.getElementById('tableWrap');
+  if(filtered.length === 0){
+    tableWrap.innerHTML = '<div class="empty">Noch keine Ladevorgänge geladen (oder alle ausgeblendet). CSV aus DUCTO oben ablegen.</div>';
+    return;
+  }
+  tableWrap.innerHTML = `
+    <table>
+      <thead><tr><th>Start</th><th>Ende</th><th>Karte</th><th style="text-align:right">Energie</th><th></th></tr></thead>
+      <tbody>
+        ${filtered.map(s => {
+          const key = uid(s);
+          const isHidden = hiddenIds.includes(key);
+          return `
+          <tr class="${isHidden ? 'hiddenRow' : ''}">
+            <td>${s.start || '—'}</td>
+            <td>${s.end || '—'}</td>
+            <td><span class="tag">${displayName(s.idTag)}</span></td>
+            <td style="text-align:right">${s.energy.toFixed(2)} kWh</td>
+            <td style="text-align:right"><button class="hideBtn" data-key="${key}">${isHidden ? 'Einblenden' : 'Ausblenden'}</button></td>
+          </tr>
+        `;}).join('')}
+      </tbody>
+    </table>
+  `;
+  tableWrap.querySelectorAll('.hideBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => toggleHideSession(e.target.dataset.key));
+  });
+}
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  if(e.target.files.length) handleFiles(e.target.files);
+  e.target.value = '';
+});
+document.getElementById('cardFilter').addEventListener('change', render);
+document.getElementById('toggleHiddenBtn').addEventListener('click', (e) => {
+  showHidden = !showHidden;
+  e.target.textContent = showHidden ? 'Ausgeblendete verbergen' : 'Ausgeblendete anzeigen';
+  render();
+});
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if(!confirm('Wirklich alle gespeicherten Ladedaten löschen?')) return;
+  sessions = [];
+  hiddenIds = [];
+  saveStored();
+  saveHidden();
+  document.getElementById('lastImport').textContent = '— noch keine Daten geladen —';
+  setStatus('Alle Daten gelöscht.', false);
+  render();
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const backup = { sessions, cardNames, hiddenIds, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ladeprotokoll-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  setStatus('Backup-Datei heruntergeladen.', false);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importInput').click();
+});
+document.getElementById('importInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    const known = new Set(sessions.map(uid));
+    let added = 0, dup = 0;
+    (backup.sessions || []).forEach(r => {
+      const key = uid(r);
+      if(known.has(key)){ dup++; return; }
+      sessions.push(r);
+      known.add(key);
+      added++;
+    });
+    cardNames = { ...cardNames, ...(backup.cardNames || {}) };
+    hiddenIds = [...new Set([...hiddenIds, ...(backup.hiddenIds || [])])];
+    sessions.sort((a,b) => (b.start || '').localeCompare(a.start || ''));
+    saveStored();
+    saveNames();
+    saveHidden();
+    setStatus(`Backup importiert: ${added} neue Sitzung(en), ${dup} Duplikat(e) übersprungen.`, false);
+    render();
+  }catch(err){
+    setStatus('Backup-Datei konnte nicht gelesen werden — ungültiges Format.', true);
+  }
+});
+
+function promptDuctoUrl(existing){
+  const url = prompt('VPN-Adresse der Wallbox (z. B. https://10.x.x.x):', existing || '');
+  if(url && url.trim()){
+    localStorage.setItem(DUCTO_URL_KEY, url.trim());
+    setStatus('DUCTO-Adresse gespeichert.', false);
+  }
+}
+
+const ductoBtn = document.getElementById('ductoBtn');
+let ductoPressTimer = null;
+let ductoLongPressed = false;
+
+ductoBtn.addEventListener('pointerdown', () => {
+  ductoLongPressed = false;
+  ductoPressTimer = setTimeout(() => {
+    ductoLongPressed = true;
+    promptDuctoUrl(localStorage.getItem(DUCTO_URL_KEY));
+  }, 550);
+});
+['pointerup','pointerleave','pointercancel'].forEach(evt => {
+  ductoBtn.addEventListener(evt, () => clearTimeout(ductoPressTimer));
+});
+ductoBtn.addEventListener('click', () => {
+  if(ductoLongPressed){ ductoLongPressed = false; return; }
+  const saved = localStorage.getItem(DUCTO_URL_KEY);
+  if(!saved){
+    promptDuctoUrl('');
+  } else {
+    window.open(saved, '_blank');
+  }
+});
+ductoBtn.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  promptDuctoUrl(localStorage.getItem(DUCTO_URL_KEY));
+});
+
+loadStored();
+
+
+</script>
+</body>
+</html>

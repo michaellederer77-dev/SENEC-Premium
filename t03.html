@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leapmotor T03 — Ladehistorie</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ece5d8">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --panel:#ffffff;
+    --panel2:#f4efe4;
+    --line:#ddd4c2;
+    --text:#2b2a26;
+    --muted:#7a7568;
+    --amp:#3f6b3f;
+    --amp-dim:#345834;
+    --warn:#a85c2c;
+    --font-body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:linear-gradient(180deg, #f2ede1 0%, #faf8f2 45%, #ffffff 100%);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:var(--font-body);
+  }
+  .hero{
+    height:220px;
+    background-size:cover;
+    background-position:center 60%;
+    background-image:url('car-t03.png');
+    position:relative;
+    margin:0 0 20px;
+  }
+  .hero .shade{
+    position:absolute;inset:0;
+    background:linear-gradient(0deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%);
+  }
+  .hero .backBtn{
+    position:absolute;top:16px;left:16px;
+    background:rgba(255,255,255,0.9);
+    border:none;border-radius:10px;
+    padding:8px 14px;
+    font-size:13px;font-weight:600;
+    text-decoration:none;color:var(--text);
+    display:inline-block;
+  }
+  .hero .title{
+    position:absolute;left:18px;bottom:16px;
+    color:#fff;
+    text-shadow:0 1px 4px rgba(0,0,0,0.6);
+  }
+  .hero .title h1{margin:0;font-size:22px;}
+  .hero .title .sub{font-size:12px;opacity:0.9;}
+
+  .wrap{max-width:920px;margin:0 auto;padding:0 18px 80px;}
+
+  .priceRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 16px;
+    margin-bottom:16px;
+    font-size:13px;
+  }
+  .priceRow label{color:var(--muted);font-size:12px;}
+  .priceRow input{
+    width:80px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:14px;
+    font-family:var(--font-body);
+    color:var(--text);
+    text-align:right;
+  }
+  .priceRow .unit{color:var(--muted);font-size:12px;}
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:12px;
+    margin-bottom:24px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 18px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card .kwh{font-size:26px;font-weight:700;color:var(--amp);}
+  .card .cost{font-size:26px;font-weight:700;color:var(--warn);}
+  .card .meta{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:10px;margin:20px 0 12px;flex-wrap:wrap;
+  }
+  h2{
+    font-size:13px;font-weight:700;text-transform:uppercase;
+    letter-spacing:0.06em;color:var(--muted);margin:0;
+  }
+  button{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-family:var(--font-body);font-size:12px;padding:7px 12px;
+    border-radius:10px;cursor:pointer;
+  }
+  button:hover{border-color:var(--amp-dim);color:var(--amp);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;font-weight:600;color:var(--muted);
+    font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;
+    padding:8px 10px;border-bottom:1px solid var(--line);
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--line);font-size:12.5px;}
+  tr.hiddenRow td{opacity:0.4;}
+  tr:hover td{background:var(--panel2);}
+  .hideBtn{padding:4px 9px;font-size:10.5px;border-radius:8px;}
+
+  .empty{
+    text-align:center;color:var(--muted);
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:32px 20px;font-size:13px;line-height:1.6;
+  }
+  .empty a{color:var(--amp);font-weight:600;}
+</style>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(()=>{});});}</script>
+</head>
+<body>
+<div class="hero">
+  <div class="shade"></div>
+  <a class="backBtn" href="index.html">← Zurück</a>
+  <div class="title">
+    <h1>Leapmotor T03</h1>
+    <div class="sub">Elektro</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="priceRow">
+    <label for="priceInput">Strompreis</label>
+    <input type="number" id="priceInput" step="0.01" min="0" placeholder="0,00">
+    <span class="unit">€ / kWh</span>
+  </div>
+  <div id="content"></div>
+</div>
+
+<script>
+const VEHICLE_NAME = 'Leapmotor T03';
+const STORAGE_KEY = 'wallbox-sessions';
+const NAMES_KEY = 'wallbox-card-names';
+const PRICE_KEY = 'wallbox-price-kwh';
+const HIDDEN_KEY = 'wallbox-hidden-sessions';
+let showHidden = false;
+
+function loadPrice(){
+  const raw = localStorage.getItem(PRICE_KEY);
+  return raw ? parseFloat(raw) : null;
+}
+function savePrice(val){ localStorage.setItem(PRICE_KEY, String(val)); }
+
+function loadHidden(){
+  try{ return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function saveHidden(ids){ localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); }
+
+function uid(row){ return [row.idTag, row.start, row.energy].join('|'); }
+
+function render(){
+  let sessions = [], cardNames = {};
+  try{ sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch(e){}
+  try{ cardNames = JSON.parse(localStorage.getItem(NAMES_KEY) || '{}'); }catch(e){}
+  let hiddenIds = loadHidden();
+
+  const price = loadPrice() || 0;
+  const tag = Object.keys(cardNames).find(t => cardNames[t] === VEHICLE_NAME);
+  const content = document.getElementById('content');
+
+  if(!tag){
+    content.innerHTML = `<div class="empty">
+      Diesem Fahrzeug ist noch keine RFID-Karte zugeordnet.<br>
+      Geh zurück zur <a href="index.html">Übersicht</a>, importiere eine CSV aus DUCTO und weise dort einer Karte den Button „${VEHICLE_NAME}" zu.
+    </div>`;
+    return;
+  }
+
+  const allOwn = sessions.filter(s => s.idTag === tag);
+  const own = allOwn.filter(s => showHidden || !hiddenIds.includes(uid(s)));
+  const kwh = own.reduce((sum,s) => sum + s.energy, 0);
+  const cost = kwh * price;
+
+  if(allOwn.length === 0){
+    content.innerHTML = `<div class="empty">Karte zugeordnet, aber noch keine Ladevorgänge importiert.</div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="cards">
+      <div class="card">
+        <div class="kwh">${kwh.toFixed(1)} kWh</div>
+        <div class="meta">Gesamt geladen</div>
+      </div>
+      <div class="card">
+        <div class="cost">${cost.toFixed(2)} €</div>
+        <div class="meta">Ladekosten gesamt${price ? '' : ' (Preis eintragen)'}</div>
+      </div>
+      <div class="card">
+        <div class="kwh">${own.length}</div>
+        <div class="meta">Ladevorgänge</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <h2>Sitzungen</h2>
+      <button id="toggleHiddenBtn">${showHidden ? 'Ausgeblendete verbergen' : 'Ausgeblendete anzeigen'}</button>
+    </div>
+    <table>
+      <thead><tr><th>Start</th><th>Ende</th><th style="text-align:right">Energie</th><th style="text-align:right">Kosten</th><th></th></tr></thead>
+      <tbody>
+        ${own.map(s => {
+          const key = uid(s);
+          const isHidden = hiddenIds.includes(key);
+          return `
+          <tr class="${isHidden ? 'hiddenRow' : ''}">
+            <td>${s.start || '—'}</td>
+            <td>${s.end || '—'}</td>
+            <td style="text-align:right">${s.energy.toFixed(2)} kWh</td>
+            <td style="text-align:right">${(s.energy * price).toFixed(2)} €</td>
+            <td style="text-align:right"><button class="hideBtn" data-key="${key}">${isHidden ? 'Einblenden' : 'Ausblenden'}</button></td>
+          </tr>
+        `;}).join('')}
+      </tbody>
+    </table>
+  `;
+
+  document.getElementById('toggleHiddenBtn').addEventListener('click', () => {
+    showHidden = !showHidden;
+    render();
+  });
+  content.querySelectorAll('.hideBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const key = e.target.dataset.key;
+      let ids = loadHidden();
+      ids = ids.includes(key) ? ids.filter(k => k !== key) : [...ids, key];
+      saveHidden(ids);
+      render();
+    });
+  });
+}
+
+const priceInput = document.getElementById('priceInput');
+const savedPrice = loadPrice();
+if(savedPrice !== null) priceInput.value = savedPrice;
+priceInput.addEventListener('input', () => {
+  const val = parseFloat(priceInput.value);
+  if(!isNaN(val)){ savePrice(val); render(); }
+});
+
+render();
+</script>
+</body>
+</html>
