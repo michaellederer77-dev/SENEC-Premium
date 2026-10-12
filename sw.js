@@ -1,4 +1,4 @@
-const CACHE = 'ladeprotokoll-v18';
+const CACHE = 'ladeprotokoll-v19';
 const ASSETS = [
   './',
   './index.html',

@@ -321,6 +321,15 @@
     border-radius:10px;
   }
   input[type=file]#importInput{display:none;}
+
+  .tableScroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table.sessTable{min-width:0;width:100%;table-layout:fixed;}
+  table.sessTable th, table.sessTable td{padding:8px 4px;font-size:12px;overflow:hidden;text-overflow:ellipsis;}
+  table.sessTable th.num, table.sessTable td.num{text-align:right;width:52px;}
+  table.sessTable td.dt{white-space:nowrap;width:76px;}
+  table.sessTable td.act{width:96px;text-align:right;}
+  table.sessTable td .tag{max-width:100%;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hideBtn{padding:5px 8px;font-size:11px;border-radius:8px;white-space:nowrap;}
 </style>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(()=>{});});}</script>
 </head>
@@ -567,6 +576,14 @@ function toggleHideSession(key){
   render();
 }
 
+function fmtDate(raw){
+  if(!raw) return '—';
+  // "2026-10-10T15:09:28.000" -> "10.10. 15:09"
+  const m = String(raw).match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if(!m) return raw;
+  return `${m[3]}.${m[2]}. ${m[4]}:${m[5]}`;
+}
+
 function render(){
   const cardFilterEl = document.getElementById('cardFilter');
   const cards = [...new Set(sessions.map(s => s.idTag))];
@@ -622,23 +639,25 @@ function render(){
     return;
   }
   tableWrap.innerHTML = `
-    <table>
-      <thead><tr><th>Start</th><th>Ende</th><th>Karte</th><th style="text-align:right">Energie</th><th></th></tr></thead>
+    <div class="tableScroll">
+    <table class="sessTable">
+      <thead><tr><th>Start</th><th>Ende</th><th>Karte</th><th class="num">kWh</th><th></th></tr></thead>
       <tbody>
         ${filtered.map(s => {
           const key = uid(s);
           const isHidden = hiddenIds.includes(key);
           return `
           <tr class="${isHidden ? 'hiddenRow' : ''}">
-            <td>${s.start || '—'}</td>
-            <td>${s.end || '—'}</td>
+            <td class="dt">${fmtDate(s.start)}</td>
+            <td class="dt">${fmtDate(s.end)}</td>
             <td><span class="tag">${displayName(s.idTag)}</span></td>
-            <td style="text-align:right">${s.energy.toFixed(2)} kWh</td>
-            <td style="text-align:right"><button class="hideBtn" data-key="${key}">${isHidden ? 'Einblenden' : 'Ausblenden'}</button></td>
+            <td class="num">${s.energy.toFixed(2)}</td>
+            <td class="act"><button class="hideBtn" data-key="${key}">${isHidden ? 'Einblenden' : 'Ausblenden'}</button></td>
           </tr>
         `;}).join('')}
       </tbody>
     </table>
+    </div>
   `;
   tableWrap.querySelectorAll('.hideBtn').forEach(btn => {
     btn.addEventListener('click', (e) => toggleHideSession(e.target.dataset.key));
